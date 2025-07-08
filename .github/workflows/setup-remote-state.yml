@@ -48,6 +48,12 @@ jobs:
       - name: Set Backend Key
         run: echo "TFSTATE_KEY=${{ inputs.environment }}.tfstate" >> $GITHUB_ENV
 
+      - name: Set outputs
+        id: set_outputs
+        run: |
+          echo "storage_account_name=${{ inputs.storage-account-name }}" >> $GITHUB_OUTPUT
+          echo "tfstate_key=${{ env.TFSTATE_KEY }}" >> $GITHUB_OUTPUT
+
       - name: Set Resource Group Name
         run: echo "BACKEND_RG=tfstate-backend-rg" >> $GITHUB_ENV
 
@@ -106,9 +112,3 @@ jobs:
       #     else
       #       echo "Skipping push — not on a branch."
       #     fi
-
-      # - name: Set outputs
-      #   id: set_outputs
-      #   run: |
-      #     echo "storage_account_name=${{ inputs.storage-account-name }}" >> $GITHUB_OUTPUT
-      #     echo "tfstate_key=${{ env.TFSTATE_KEY }}" >> $GITHUB_OUTPUT
