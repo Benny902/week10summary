@@ -33,8 +33,8 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      storage_account_name: ${{ steps.set_outputs.outputs.storage_account_name }}
-      tfstate_key: ${{ steps.set_outputs.outputs.tfstate_key }}
+      storage_account_name: ${{ inputs.storage-account-name }}
+      tfstate_key: ${{ inputs.environment }}.tfstate
 
     steps:
       - name: Checkout repo
@@ -47,12 +47,6 @@ jobs:
 
       - name: Set Backend Key
         run: echo "TFSTATE_KEY=${{ inputs.environment }}.tfstate" >> $GITHUB_ENV
-
-      - name: Set outputs
-        id: set_outputs
-        run: |
-          echo "storage_account_name=${{ inputs.storage-account-name }}" >> $GITHUB_OUTPUT
-          echo "tfstate_key=${{ env.TFSTATE_KEY }}" >> $GITHUB_OUTPUT
 
       - name: Set Resource Group Name
         run: echo "BACKEND_RG=tfstate-backend-rg" >> $GITHUB_ENV
