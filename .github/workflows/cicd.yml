@@ -92,7 +92,7 @@ jobs:
     secrets: inherit
 
   deploy-infrastructure:
-    needs: [setup-remote-state, set-environment]
+    needs: [setup-remote-state, set-environment, gate-approval]
     if: ${{ needs.setup-remote-state.result == 'success' }}
     uses: ./.github/workflows/terraform-deploy.yml
     with:
