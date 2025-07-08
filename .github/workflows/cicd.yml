@@ -73,11 +73,11 @@ jobs:
     outputs:
       approved_env: ${{ needs.set-environment.outputs.selected_env }}
     steps:
-      - name: Await manual approval for prod
-        run: echo "Approval granted for prod deployment"
+      - name: Wait for manual approval
+        run: echo "Deployment to prod approved"
 
   setup-remote-state:
-    needs: [backend-test, frontend-test, set-environment]
+    needs: [backend-test, frontend-test, set-environment, gate-approval]
     if: >
       ${{
         (needs.set-environment.outputs.selected_env == 'dev') ||
