@@ -40,29 +40,9 @@ jobs:
     needs: set-environment
     uses: ./.github/workflows/backend-test.yml
 
-  backend-notify:
-    needs: [backend-test, set-environment, healthcheck]
-    if: always()
-    uses: ./.github/workflows/notify-backend.yml
-    with:
-      job_start_time: ${{ needs.backend-test.outputs.job_start_time }}
-      test_status: ${{ needs.backend-test.result }}
-      build_status: ${{ needs.backend-docker-build.result }}
-    secrets: inherit
-
   frontend-test:
     needs: set-environment
     uses: ./.github/workflows/frontend-test.yml
-
-  frontend-notify:
-    needs: [frontend-test, set-environment, healthcheck]
-    if: always()
-    uses: ./.github/workflows/notify-frontend.yml
-    with:
-      job_start_time: ${{ needs.frontend-test.outputs.job_start_time }}
-      test_status: ${{ needs.frontend-test.result }}
-      build_status: ${{ needs.frontend-docker-build.result }}
-    secrets: inherit
 
   gate-approval:
     if: ${{ needs.set-environment.outputs.selected_env == 'prod' }}
@@ -70,8 +50,6 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: prod
-    outputs:
-      approved_env: ${{ needs.set-environment.outputs.selected_env }}
     steps:
       - name: Wait for manual approval
         run: echo "Deployment to prod approved"
@@ -81,7 +59,7 @@ jobs:
     if: >
       ${{
         needs.set-environment.outputs.selected_env == 'dev' ||
-        (needs.set-environment.outputs.selected_env == 'prod' && success())
+        (needs.set-environment.outputs.selected_env == 'prod' && needs.gate-approval.result == 'success')
       }}
     uses: ./.github/workflows/setup-remote-state.yml
     with:
@@ -126,6 +104,26 @@ jobs:
   e2e-tests:
     needs: deploy-webapp
     uses: ./.github/workflows/e2e-tests.yml
+
+  backend-notify:
+    needs: [backend-test, set-environment, healthcheck]
+    if: always()
+    uses: ./.github/workflows/notify-backend.yml
+    with:
+      job_start_time: ${{ needs.backend-test.outputs.job_start_time }}
+      test_status: ${{ needs.backend-test.result }}
+      build_status: ${{ needs.backend-docker-build.result }}
+    secrets: inherit
+
+  frontend-notify:
+    needs: [frontend-test, set-environment, healthcheck]
+    if: always()
+    uses: ./.github/workflows/notify-frontend.yml
+    with:
+      job_start_time: ${{ needs.frontend-test.outputs.job_start_time }}
+      test_status: ${{ needs.frontend-test.result }}
+      build_status: ${{ needs.frontend-docker-build.result }}
+    secrets: inherit
 
   write-deployment-log:
     needs: healthcheck
