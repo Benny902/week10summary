@@ -79,9 +79,6 @@ jobs:
             -var="ssh_public_key=${{ steps.ssh.outputs.ssh_public_key }}"
         env:
           TF_VAR_rg_name: ${{ env.rg_name }}
-          TF_VAR_location: ${{ env.location }}
-          TF_VAR_vm_name: ${{ env.vm_name }}
-          TF_VAR_admin_username: ${{ env.admin_username }}
 
       - name: Await Manual Approval Before Apply
         uses: hmarr/auto-approve-action@v3
