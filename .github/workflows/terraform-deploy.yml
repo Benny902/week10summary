@@ -76,7 +76,7 @@ jobs:
 
       - name: Conditionally Import Resource Group if Not Already in State
         run: |
-          RG_NAME="devops-week9-rg"
+          RG_NAME="${{ env.rg_name }}"
           SUB_ID="${{ env.ARM_SUBSCRIPTION_ID }}"
 
           if terraform state list | grep -q "module.rg.azurerm_resource_group.devops_rg"; then
