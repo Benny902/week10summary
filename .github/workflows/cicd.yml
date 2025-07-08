@@ -92,8 +92,8 @@ jobs:
     if: ${{ needs.set-environment.outputs.selected_env == 'dev' || needs.gate-approval.result == 'success' }}
     uses: ./.github/workflows/terraform-deploy.yml
     with:
-      storage-account-name: ${{ needs.setup-remote-state.outputs.storage_account_name }}
-      key: ${{ needs.setup-remote-state.outputs.tfstate_key }}
+      storage-account-name: ${{ needs.setup-remote-state.outputs.storage_account_name.value }}
+      key: ${{ needs.setup-remote-state.outputs.tfstate_key.value }}
       environment: ${{ needs.set-environment.outputs.selected_env }}
     secrets: inherit
 
