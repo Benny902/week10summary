@@ -5,7 +5,7 @@ provider "azurerm" {
 
 module "rg" {
   source   = "./modules/resource_group"
-  name     = "devops-week9-rg"
+  name     = var.rg_name
   location = var.location
 }
 

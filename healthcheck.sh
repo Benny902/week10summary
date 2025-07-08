@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define variables
-RESOURCE_GROUP="devops-week9-rg"
-VM_NAME="week9vm"
+RESOURCE_GROUP="dev-devops-week10-rg"
+VM_NAME="week10vm"
 
 # Get the public IP of the VM using Azure CLI
 VM_IP=$(az vm show \

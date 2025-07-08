@@ -17,6 +17,9 @@ on:
         required: false
         default: westeurope
         type: string
+      environment:
+        required: true
+        type: string
     secrets:
       AZURE_CREDENTIALS:
         required: true
@@ -29,6 +32,10 @@ jobs:
     name: Configure Azure Storage Backend
     runs-on: ubuntu-latest
 
+    outputs:
+      storage_account_name: ${{ inputs.storage-account-name }}
+      tfstate_key: ${{ env.TFSTATE_KEY }}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -38,9 +45,12 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Set Backend Key
+        run: echo "TFSTATE_KEY=${{ inputs.environment }}.tfstate" >> $GITHUB_ENV
+
       - name: Set Resource Group Name
-        id: vars
-        run: echo "BACKEND_RG=tfstate-backend-rg" >> "$GITHUB_ENV"
+        #id: vars
+        run: echo "BACKEND_RG=tfstate-backend-rg" >> $GITHUB_ENV
 
       - name: Create Resource Group (for backend only)
         run: |
@@ -71,7 +81,7 @@ jobs:
             --name "${{ inputs.container-name }}" \
             --account-name "${{ inputs.storage-account-name }}" \
             --account-key "${{ steps.get-key.outputs.key }}" || true
-
+    
       # - name: Generate backend.tf
       #   run: |
       #     cat <<EOF > backend.tf

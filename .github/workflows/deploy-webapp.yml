@@ -25,12 +25,12 @@ jobs:
 
       - name: Copy files to VM with rsync
         run: |
-          rsync -az --delete --exclude='.git' --exclude='node_modules' -e "ssh -i key.pem -o StrictHostKeyChecking=no" ./ azureuser@${{ inputs.vm_ip }}:/home/azureuser/week9project
+          rsync -az --delete --exclude='.git' --exclude='node_modules' -e "ssh -i key.pem -o StrictHostKeyChecking=no" ./ azureuser@${{ inputs.vm_ip }}:/home/azureuser/week10project
 
       - name: Deploy with docker-compose
         run: |
           ssh -i key.pem -o StrictHostKeyChecking=no azureuser@${{ inputs.vm_ip }} "
-            cd /home/azureuser/week9project &&
+            cd /home/azureuser/week10project &&
             sudo docker-compose down --remove-orphans &&
             sudo docker-compose up -d --build
           "

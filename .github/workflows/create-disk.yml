@@ -15,8 +15,8 @@ jobs:
 
       - name: Create and Attach P1 Premium SSD (idempotent)
         run: |
-          RESOURCE_GROUP="devops-week9-rg"
-          VM_NAME="week9vm"
+          RESOURCE_GROUP="dev-devops-week10-rg"
+          VM_NAME="week10vm"
           LOCATION="westeurope"
           DISK_NAME="myP1Disk"
 

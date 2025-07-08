@@ -3,7 +3,7 @@ variable "location" {
 }
 
 variable "vm_name" {
-  default = "week9vm"
+  default = "week10vm"
 }
 
 variable "admin_username" {
@@ -11,3 +11,8 @@ variable "admin_username" {
 }
 
 variable "ssh_public_key" {}
+
+variable "rg_name" {
+  description = "Name of the resource group"
+  type        = string
+}

@@ -7,17 +7,41 @@ on:
     tags:
       - 'v*.*.*'
 
-  workflow_dispatch: # Can be run manually
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Choose the environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
 
 permissions:
   contents: write # needed for 'write-deployment-log'
 
 jobs:
+  set-environment:
+    runs-on: ubuntu-latest
+    outputs:
+      selected_env: ${{ steps.setenv.outputs.env }}
+    steps:
+      - name: Determine selected environment
+        id: setenv
+        run: |
+          if [ -z "${{ github.event.inputs.environment }}" ]; then
+            echo "env=dev" >> "$GITHUB_OUTPUT"
+          else
+            echo "env=${{ github.event.inputs.environment }}" >> "$GITHUB_OUTPUT"
+          fi
+
   backend-test:
+    needs: set-environment
     uses: ./.github/workflows/backend-test.yml
 
   backend-notify:
-    needs: backend-test
+    needs: [backend-test, set-environment]
     if: always()
     uses: ./.github/workflows/notify-backend.yml
     with:
@@ -27,10 +51,11 @@ jobs:
     secrets: inherit
 
   frontend-test:
+    needs: set-environment
     uses: ./.github/workflows/frontend-test.yml
 
   frontend-notify:
-    needs: frontend-test
+    needs: [frontend-test, set-environment]
     if: always()
     uses: ./.github/workflows/notify-frontend.yml
     with:
@@ -39,20 +64,33 @@ jobs:
       build_status: ${{ needs.frontend-docker-build.result }}
     secrets: inherit
 
+  gate-approval:
+    if: ${{ needs.set-environment.outputs.selected_env == 'prod' }}
+    needs: set-environment
+    runs-on: ubuntu-latest
+    environment:
+      name: prod
+    steps:
+      - name: Await manual approval for prod
+        run: echo "Approval granted for prod deployment"
+
   setup-remote-state:
-    needs: [backend-test, frontend-test]
+    needs: [backend-test, frontend-test, set-environment, gate-approval]
     uses: ./.github/workflows/setup-remote-state.yml
     with:
-      storage-account-name: tfstateweek9infra
+      storage-account-name: tfstateweek10infra
       container-name: tfstate
       location: westeurope
+      environment: ${{ needs.set-environment.outputs.selected_env }}
     secrets: inherit
 
   deploy-infrastructure:
-    needs: setup-remote-state
+    needs: [setup-remote-state, set-environment, gate-approval]
     uses: ./.github/workflows/terraform-deploy.yml
     with:
       storage-account-name: ${{ needs.setup-remote-state.outputs.storage_account_name }}
+      key: ${{ needs.setup-remote-state.outputs.tfstate_key }}
+      environment: ${{ needs.set-environment.outputs.selected_env }}
     secrets: inherit
 
   create-and-attach-disk:

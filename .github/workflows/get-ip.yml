@@ -26,19 +26,19 @@ jobs:
         id: get_ip_name
         run: |
           IP_NAME=$(az network public-ip list \
-            --resource-group devops-week9-rg \
+            --resource-group dev-devops-week10-rg \
             --query "[0].name" -o tsv)
           echo "ip_name=$IP_NAME" >> $GITHUB_OUTPUT
 
       - name: Make IP Static
         run: |
           az network public-ip update \
-            --resource-group devops-week9-rg \
+            --resource-group dev-devops-week10-rg \
             --name "${{ steps.get_ip_name.outputs.ip_name }}" \
             --allocation-method Static
 
       - name: Get VM Public IP
         id: get_vm_ip
         run: |
-          VM_IP=$(az vm show -d -g devops-week9-rg -n week9vm --query publicIps -o tsv)
+          VM_IP=$(az vm show -d -g dev-devops-week10-rg -n week10vm --query publicIps -o tsv)
           echo "vm_ip=$VM_IP" >> $GITHUB_OUTPUT
