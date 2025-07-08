@@ -65,11 +65,7 @@ jobs:
     secrets: inherit
 
   gate-approval:
-    if: >
-      ${{
-        needs.set-environment.outputs.selected_env == 'dev' ||
-        (needs.set-environment.outputs.selected_env == 'prod' && needs.gate-approval.result == 'success')
-      }}
+    if: ${{ needs.set-environment.outputs.selected_env == 'prod' }}
     needs: set-environment
     runs-on: ubuntu-latest
     environment:
