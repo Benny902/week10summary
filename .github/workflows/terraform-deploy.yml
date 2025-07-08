@@ -66,6 +66,11 @@ jobs:
           echo "Loaded env/${{ inputs.environment }}.env"
           cat .env >> $GITHUB_ENV
 
+      - name: Debug Storage Account Name
+        run: |
+          echo "Storage account name: '${{ inputs.storage-account-name }}'"
+          echo "Key: '${{ inputs.key }}'"
+
       - name: Terraform Init
         run: |
           terraform init \
