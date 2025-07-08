@@ -77,8 +77,12 @@ jobs:
         run: echo "Approval granted for prod deployment"
 
   setup-remote-state:
-    needs: [backend-test, frontend-test, set-environment]
-    if: ${{ needs.set-environment.outputs.selected_env == 'dev' || needs.gate-approval.result == 'success' }}
+    needs: [backend-test, frontend-test, set-environment, gate-approval]
+    if: >
+      ${{
+        (needs.set-environment.outputs.selected_env == 'dev') ||
+        (needs.set-environment.outputs.selected_env == 'prod' && needs.gate-approval.result == 'success')
+      }}
     uses: ./.github/workflows/setup-remote-state.yml
     with:
       storage-account-name: tfstateweek10infra
