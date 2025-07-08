@@ -131,6 +131,14 @@ jobs:
         with:
           terraform_version: 1.8.5
 
+      - name: Set Terraform Azure credentials
+        run: |
+          echo '${{ secrets.AZURE_CREDENTIALS }}' > sp.json
+          echo "ARM_CLIENT_ID=$(jq -r .clientId sp.json)" >> $GITHUB_ENV
+          echo "ARM_CLIENT_SECRET=$(jq -r .clientSecret sp.json)" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=$(jq -r .subscriptionId sp.json)" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=$(jq -r .tenantId sp.json)" >> $GITHUB_ENV
+
       - name: Load Environment Variables
         run: |
           cp "./env/${{ inputs.environment }}.env" .env
