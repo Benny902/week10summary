@@ -1,6 +1,6 @@
 //const API_BASE_URL = 'http://localhost:3000'; // this is local
 //const API_BASE_URL = 'https://week5-ci-cd.onrender.com';
-const API_BASE_URL = `http://20.224.96.1:3000`; // this is azure vm
+const API_BASE_URL = `http://20.71.53.102:3000`; // this is azure vm
 
 const form = document.getElementById('blog-form');
 const input = document.getElementById('blog-input');
