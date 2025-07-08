@@ -926,3 +926,112 @@ in the course:
 
 ## Flowchart
 ![alt text](drawio/week10sum.png)
+
+### GitHubSecrets Required (Settings > Secrets and variables > Actions): 
+- VM_SSH_KEY → Contents of the private ~/.ssh/id_rsa file (not the .pub!)
+- AZURE_CREDENTIALS → A service principal in JSON format to allow azure/login
+
+<br>
+
+Create `VM_SSH_KEY` with:
+```bash
+ssh-keygen -t rsa -b 2048
+```
+- copy the Contents of the private ~/.ssh/id_rsa file (not the .pub!) into the `VM_SSH_KEY` secret
+
+<br>
+
+Create `AZURE_CREDENTIALS` with:
+```bash
+# to login:
+az login --use-device-code
+
+# to see list of accounts associated and verify which is set as default.
+az account list --output table
+
+# then create with this: (replaced <SubscriptionId> with mine)
+az ad sp create-for-rbac \
+  --name "gh-actions" \
+  --role contributor \
+  --scopes "/subscriptions/<SubscriptionId>" \
+  --sdk-auth
+```
+- copy the entire json output into the `AZURE_CREDENTIALS` secret
+
+---
+
+### Install and Configure Terraform
+
+#### Install terraform
+```bash
+sudo snap install terraform --classic
+```
+
+- check that install successful `terraform -v`
+
+---
+
+### Create initial main.tf and initialize:
+```bash
+touch main.tf
+terraform init
+```
+
+### Make Modular main.tf and Define Infrastructure Resources
+
+#### Modular folder structure for modules  
+
+```css
+root/
+├── env/
+│   └── dev.env
+│   └── prod.env
+├── main.tf
+├── variables.tf
+├── outputs.tf
+└── modules/
+    ├── resource_group/
+    │   └── main.tf
+    │   └── variables.tf
+    │   └── outputs.tf
+    ├── network/
+    │   └── main.tf
+    │   └── variables.tf
+    │   └── outputs.tf
+    └── vm/
+        └── main.tf
+        └── variables.tf
+        └── cloud-init.sh
+```
+
+# Deploying to Dev (triggered on push to main and also can be manualy triggered with workflow_dispatch):
+
+### After the Terraform Plan, there is a need to 'review and approve' before continuing with the 'terraform apply'
+
+Example run:
+https://github.com/Benny902/week10summary/actions/runs/16146079121
+
+### before the approve:
+![alt text](images/week10-applyapprove1.png)
+### the approve:
+![alt text](images/week10-applyapprove2.png)
+### after the approve:
+![alt text](images/week10-applyapprove3.png)
+
+
+# Deploying to Prod (can Only be manualy triggered with workflow_dispatch):
+### The deploy to Prod also has the 'review and approve' between the terraform plan and apply
+### And in addition, it has an initial approve gateway in the start of the entire action. 
+
+
+Example run:
+https://github.com/Benny902/week10summary/actions/runs/16146079121
+
+### dropdown to choose environment to deploy:
+![alt text](images/week10-gateway1.png)
+### before the approve:
+![alt text](images/week10-gateway2.png)
+### the approve:
+![alt text](images/week10-gateway3.png)
+
+### and then it starts with the prod deploy.
