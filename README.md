@@ -1,19 +1,9 @@
 # week10summary
 # Week 10 – Final Summary Task: Mini DevOps Project
 this is built on top of 'week9summary' - https://github.com/Benny902/week9summary  
-with the addition Objective of week 10 summary task:
-## Objective
-Individually build and deploy a simple web application using the full DevOps stack covered
-in the course:
-- Docker & Docker Compose
-- Azure VM infrastructure
-- GitHub Actions CI/CD
-- Terraform provisioning
-- Environment configuration & automation
-
----
 
 <details><summary>week 9</summary>
+
 
 ### GitHubSecrets Required (Settings > Secrets and variables > Actions): 
 - VM_SSH_KEY → Contents of the private ~/.ssh/id_rsa file (not the .pub!)
@@ -916,5 +906,23 @@ Before and after VM reboot:
 http://20.224.96.1:4000/
 
 </details>
+<br>
 
-Week 10:
+
+with the addition Objective of week 10 summary task:
+## Objective
+Individually build and deploy a simple web application using the full DevOps stack covered
+in the course:
+- Docker & Docker Compose
+- Azure VM infrastructure
+- GitHub Actions CI/CD
+- Terraform provisioning
+- Environment configuration & automation
+
+---
+
+
+# Week 10:
+
+## Flowchart
+![alt text](drawio/week10sum.png)

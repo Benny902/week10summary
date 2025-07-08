@@ -70,12 +70,15 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: prod
+    outputs:
+      approved_env: ${{ needs.set-environment.outputs.selected_env }}
     steps:
       - name: Await manual approval for prod
         run: echo "Approval granted for prod deployment"
 
   setup-remote-state:
-    needs: [backend-test, frontend-test, set-environment, gate-approval]
+    needs: [backend-test, frontend-test, set-environment]
+    if: ${{ needs.set-environment.outputs.selected_env == 'dev' || needs.gate-approval.result == 'success' }}
     uses: ./.github/workflows/setup-remote-state.yml
     with:
       storage-account-name: tfstateweek10infra
@@ -85,7 +88,8 @@ jobs:
     secrets: inherit
 
   deploy-infrastructure:
-    needs: [setup-remote-state, set-environment, gate-approval]
+    needs: [setup-remote-state, set-environment]
+    if: ${{ needs.set-environment.outputs.selected_env == 'dev' || needs.gate-approval.result == 'success' }}
     uses: ./.github/workflows/terraform-deploy.yml
     with:
       storage-account-name: ${{ needs.setup-remote-state.outputs.storage_account_name }}
