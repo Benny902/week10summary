@@ -30,10 +30,10 @@ jobs:
       - name: Determine selected environment
         id: setenv
         run: |
-          if [ -z "${{ github.event.inputs.environment }}" ]; then
-            echo "env=dev" >> "$GITHUB_OUTPUT"
-          else
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "env=${{ github.event.inputs.environment }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "env=dev" >> "$GITHUB_OUTPUT"
           fi
 
   backend-test:
