@@ -1,0 +1,44 @@
+name: Get Azure VM Public IP
+
+on:
+  workflow_call:
+    outputs:
+      vm_ip:
+        description: "Public IP of the VM"
+        value: ${{ jobs.get-ip.outputs.vm_ip }}
+    secrets:
+      AZURE_CREDENTIALS:
+        required: true
+
+jobs:
+  get-ip:
+    runs-on: ubuntu-latest
+    outputs:
+      vm_ip: ${{ steps.get_vm_ip.outputs.vm_ip }}
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get Public IP Name
+        id: get_ip_name
+        run: |
+          IP_NAME=$(az network public-ip list \
+            --resource-group devops-week9-rg \
+            --query "[0].name" -o tsv)
+          echo "ip_name=$IP_NAME" >> $GITHUB_OUTPUT
+
+      - name: Make IP Static
+        run: |
+          az network public-ip update \
+            --resource-group devops-week9-rg \
+            --name "${{ steps.get_ip_name.outputs.ip_name }}" \
+            --allocation-method Static
+
+      - name: Get VM Public IP
+        id: get_vm_ip
+        run: |
+          VM_IP=$(az vm show -d -g devops-week9-rg -n week9vm --query publicIps -o tsv)
+          echo "vm_ip=$VM_IP" >> $GITHUB_OUTPUT

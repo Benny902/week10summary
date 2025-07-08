@@ -1,0 +1,54 @@
+name: healthcheck
+
+on:
+  workflow_call:
+    outputs:
+      ip_status:
+        description: "Was the IP made static successfully?"
+        value: ${{ jobs.healthcheck.outputs.ip_status }}
+
+jobs:
+  healthcheck:
+    runs-on: ubuntu-latest
+    outputs:
+      ip_status: ${{ steps.recheck.outcome }}
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get Public IP Name
+        id: get_ip_name
+        run: |
+          IP_NAME=$(az network public-ip list \
+            --resource-group devops-week9-rg \
+            --query "[0].name" -o tsv)
+          echo "IP_NAME=$IP_NAME" >> $GITHUB_ENV
+
+      - name: Make IP Static
+        run: |
+          az network public-ip update \
+            --resource-group devops-week9-rg \
+            --name "$IP_NAME" \
+            --allocation-method Static
+
+      - name: Get VM Public IP
+        id: get_vm_ip
+        run: |
+          VM_IP=$(az vm show -d -g devops-week9-rg -n week9vm --query publicIps -o tsv)
+          echo "VM_IP=$VM_IP" >> $GITHUB_ENV
+
+      - name: Run Initial Healthcheck
+        run: |
+          echo "Checking http://$VM_IP:3000..." > healthcheck.log
+          if curl --fail --silent http://$VM_IP:3000; then
+            echo "Initial health check passed" >> healthcheck.log
+          else
+            echo "Initial health check failed" >> healthcheck.log
+            exit 1
+          fi

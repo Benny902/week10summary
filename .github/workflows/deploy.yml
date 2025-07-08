@@ -1,0 +1,52 @@
+name: Terraform Azure Deployment
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+jobs:
+  deploy:
+    name: Provision Azure Infrastructure with Terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+
+      - name: Write SSH Private Key
+        run: |
+          echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Derive SSH Public Key
+        run: |
+          ssh-keygen -y -f ~/.ssh/id_rsa > ~/.ssh/id_rsa.pub
+          cat ~/.ssh/id_rsa.pub
+
+      - name: 📦 Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: |
+          SSH_PUB_KEY=$(cat ~/.ssh/id_rsa.pub)
+          terraform apply -auto-approve -var="ssh_public_key=$SSH_PUB_KEY"
+
+      - name: Output Public IP for SSH
+        run: |
+          terraform output public_ip_address

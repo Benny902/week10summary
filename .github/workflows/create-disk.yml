@@ -1,0 +1,48 @@
+name: Attach P1 Disk
+
+on:
+  workflow_call:
+
+jobs:
+  attach-p1-disk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Create and Attach P1 Premium SSD (idempotent)
+        run: |
+          RESOURCE_GROUP="devops-week9-rg"
+          VM_NAME="week9vm"
+          LOCATION="westeurope"
+          DISK_NAME="myP1Disk"
+
+          # Check if disk already exists
+          if az disk show --resource-group "$RESOURCE_GROUP" --name "$DISK_NAME" &> /dev/null; then
+            echo "Disk '$DISK_NAME' already exists."
+          else
+            echo "Creating 4 GiB P1 Premium SSD ($DISK_NAME)..."
+            az disk create \
+              --resource-group "$RESOURCE_GROUP" \
+              --name "$DISK_NAME" \
+              --sku Premium_LRS \
+              --tier P1 \
+              --size-gb 4 \
+              --location "$LOCATION"
+          fi
+
+          # Check if disk is already attached
+          ATTACHED_VM=$(az disk show --resource-group "$RESOURCE_GROUP" --name "$DISK_NAME" --query "managedBy" -o tsv)
+
+          if [[ "$ATTACHED_VM" == *"$VM_NAME" ]]; then
+            echo "Disk '$DISK_NAME' is already attached to $VM_NAME."
+          else
+            echo "Attaching $DISK_NAME to $VM_NAME..."
+            az vm disk attach \
+              --resource-group "$RESOURCE_GROUP" \
+              --vm-name "$VM_NAME" \
+              --name "$DISK_NAME"
+          fi

@@ -1,0 +1,41 @@
+name: Reboot and Healthcheck
+
+on:
+  workflow_dispatch:
+
+jobs:
+  get-vm-ip:
+    uses: ./.github/workflows/get-ip.yml
+    secrets: inherit
+
+  reboot-test:
+    needs: get-vm-ip
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Write SSH key
+        run: |
+          echo "${{ secrets.VM_SSH_KEY }}" > key.pem
+          chmod 600 key.pem
+
+      - name: Reboot VM via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem azureuser@${{ needs.get-vm-ip.outputs.vm_ip }} "sudo reboot" || true
+          echo "Waiting 90s for reboot..."
+          sleep 90
+
+      - name: Health Check After Reboot
+        run: |
+          echo "Rechecking app at http://${{ needs.get-vm-ip.outputs.vm_ip }}:3000" > reboot-healthcheck.log
+          if curl --fail --silent http://${{ needs.get-vm-ip.outputs.vm_ip }}:3000; then
+            echo "App came back online" >> reboot-healthcheck.log
+          else
+            echo "App failed after reboot" >> reboot-healthcheck.log
+            exit 1
+          fi
+
+      - name: Upload Healthcheck Result
+        uses: actions/upload-artifact@v4
+        with:
+          name: reboot-healthcheck-log
+          path: reboot-healthcheck.log

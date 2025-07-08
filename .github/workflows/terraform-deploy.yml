@@ -1,0 +1,82 @@
+  name: Terraform Azure Deployment
+
+  on:
+    workflow_call:
+      inputs:
+        storage-account-name:
+          required: true
+          type: string
+      secrets:
+        AZURE_CREDENTIALS:
+          required: true
+        VM_SSH_KEY:
+          required: true
+
+  jobs:
+    deploy:
+      name: Provision Azure Infrastructure with Terraform
+      runs-on: ubuntu-latest
+
+      steps:
+        - name: Checkout Repository with latest commit
+          uses: actions/checkout@v3
+          with:
+            fetch-depth: 0
+
+        - name: Azure Login
+          uses: azure/login@v1
+          with:
+            creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+        - name: Set up Terraform
+          uses: hashicorp/setup-terraform@v3
+          with:
+            terraform_version: 1.8.5
+
+        - name: Write SSH Private Key
+          run: |
+            mkdir -p ~/.ssh
+            echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+
+        - name: Derive SSH Public Key
+          id: ssh
+          run: |
+            ssh-keygen -y -f ~/.ssh/id_rsa > ~/.ssh/id_rsa.pub
+            echo "ssh_public_key=$(cat ~/.ssh/id_rsa.pub)" >> "$GITHUB_OUTPUT"
+
+        - name: Set Terraform Azure credentials
+          run: |
+            echo '${{ secrets.AZURE_CREDENTIALS }}' > sp.json
+            echo "ARM_CLIENT_ID=$(jq -r .clientId sp.json)" >> $GITHUB_ENV
+            echo "ARM_CLIENT_SECRET=$(jq -r .clientSecret sp.json)" >> $GITHUB_ENV
+            echo "ARM_SUBSCRIPTION_ID=$(jq -r .subscriptionId sp.json)" >> $GITHUB_ENV
+            echo "ARM_TENANT_ID=$(jq -r .tenantId sp.json)" >> $GITHUB_ENV
+
+        - name: Terraform Init
+          run: terraform init
+
+        # - name: Conditionally Import Resource Group if Not Already in State
+        #   run: |
+        #     RG_NAME="devops-week9-rg"
+        #     SUB_ID="${{ env.ARM_SUBSCRIPTION_ID }}"
+
+        #     if terraform state list | grep -q "module.rg.azurerm_resource_group.devops_rg"; then
+        #       echo "Resource group already managed in Terraform state. Skipping import."
+        #     else
+        #       EXISTS=$(az group exists --name "$RG_NAME")
+        #       if [ "$EXISTS" == "true" ]; then
+        #         echo "Resource group exists. Importing into Terraform state..."
+        #         terraform import -lock=false module.rg.azurerm_resource_group.devops_rg "/subscriptions/$SUB_ID/resourceGroups/$RG_NAME"
+        #       else
+        #         echo "Resource group does not exist. Terraform will create it during apply."
+        #       fi
+        #     fi
+
+        - name: Terraform Apply
+          run: |
+            terraform apply -auto-approve \
+              -var="ssh_public_key=${{ steps.ssh.outputs.ssh_public_key }}"
+
+        - name: Output Public IP
+          run: terraform output public_ip_address

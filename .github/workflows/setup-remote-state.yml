@@ -1,0 +1,100 @@
+name: Setup Terraform Remote State Storage
+
+on:
+  workflow_call:
+    inputs:
+      storage-account-name:
+        required: true
+        type: string
+      container-name:
+        required: true
+        type: string
+      key:
+        required: false
+        default: terraform.tfstate
+        type: string
+      location:
+        required: false
+        default: westeurope
+        type: string
+    secrets:
+      AZURE_CREDENTIALS:
+        required: true
+
+permissions:
+  contents: write # required to commit backend.tf
+
+jobs:
+  setup-remote-state:
+    name: Configure Azure Storage Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set Resource Group Name
+        id: vars
+        run: echo "BACKEND_RG=tfstate-backend-rg" >> "$GITHUB_ENV"
+
+      - name: Create Resource Group (for backend only)
+        run: |
+          az group create \
+            --name "$BACKEND_RG" \
+            --location "${{ inputs.location }}"
+
+      - name: Create Storage Account (for backend state)
+        run: |
+          az storage account create \
+            --name "${{ inputs.storage-account-name }}" \
+            --resource-group "$BACKEND_RG" \
+            --location "${{ inputs.location }}" \
+            --sku Standard_LRS
+
+      - name: Get Storage Account Key
+        id: get-key
+        run: |
+          ACCOUNT_KEY=$(az storage account keys list \
+            --resource-group "$BACKEND_RG" \
+            --account-name "${{ inputs.storage-account-name }}" \
+            --query '[0].value' -o tsv)
+          echo "key=$ACCOUNT_KEY" >> "$GITHUB_OUTPUT"
+
+      - name: Create Blob Container
+        run: |
+          az storage container create \
+            --name "${{ inputs.container-name }}" \
+            --account-name "${{ inputs.storage-account-name }}" \
+            --account-key "${{ steps.get-key.outputs.key }}" || true
+
+      # - name: Generate backend.tf
+      #   run: |
+      #     cat <<EOF > backend.tf
+      #     terraform {
+      #       backend "azurerm" {
+      #         resource_group_name  = "tfstate-backend-rg"
+      #         storage_account_name = "${{ inputs.storage-account-name }}"
+      #         container_name       = "${{ inputs.container-name }}"
+      #         key                  = "${{ inputs.key }}"
+      #       }
+      #     }
+      #     EOF
+
+      # - name: Commit and Push backend.tf
+      #   run: |
+      #     git config --global user.name "gh-actions"
+      #     git config --global user.email "github-actions@users.noreply.github.com"
+      #     git add backend.tf
+      #     git commit -m "Add backend.tf for remote state [skip ci]" || echo "No changes to commit"
+
+      #     BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}")
+      #     if [[ "$GITHUB_REF" == refs/heads/* ]]; then
+      #       git push origin HEAD:$GITHUB_REF
+      #     else
+      #       echo "Skipping push — not on a branch."
+      #     fi
