@@ -41,7 +41,7 @@ jobs:
     uses: ./.github/workflows/backend-test.yml
 
   backend-notify:
-    needs: [backend-test, set-environment]
+    needs: [backend-test, set-environment, healthcheck]
     if: always()
     uses: ./.github/workflows/notify-backend.yml
     with:
@@ -55,7 +55,7 @@ jobs:
     uses: ./.github/workflows/frontend-test.yml
 
   frontend-notify:
-    needs: [frontend-test, set-environment]
+    needs: [frontend-test, set-environment, healthcheck]
     if: always()
     uses: ./.github/workflows/notify-frontend.yml
     with:
