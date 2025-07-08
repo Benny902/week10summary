@@ -77,7 +77,7 @@ jobs:
         run: echo "Approval granted for prod deployment"
 
   setup-remote-state:
-    needs: [backend-test, frontend-test, set-environment, gate-approval]
+    needs: [backend-test, frontend-test, set-environment]
     if: >
       ${{
         (needs.set-environment.outputs.selected_env == 'dev') ||
