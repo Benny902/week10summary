@@ -82,6 +82,13 @@ jobs:
         env:
           TF_VAR_rg_name: ${{ env.rg_name }}
 
+      - name: Upload Terraform Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: tfplan.binary
+
+
   terraform-apply:
     name: Terraform Apply (Manual Approval)
     runs-on: ubuntu-latest
@@ -115,6 +122,11 @@ jobs:
             -backend-config="container_name=tfstate" \
             -backend-config="key=${{ inputs.key }}" \
             -backend-config="resource_group_name=tfstate-backend-rg"
+
+      - name: Download Terraform Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan
 
       - name: Terraform Apply
         run: terraform apply tfplan.binary
