@@ -81,34 +81,34 @@ jobs:
             --account-name "${{ inputs.storage-account-name }}" \
             --account-key "${{ steps.get-key.outputs.key }}" || true
 
-      - name: Generate backend.tf
-        run: |
-          cat <<EOF > backend.tf
-          terraform {
-            backend "azurerm" {
-              resource_group_name  = "tfstate-backend-rg"
-              storage_account_name = "${{ inputs.storage-account-name }}"
-              container_name       = "${{ inputs.container-name }}"
-              key                  = "${{ env.TFSTATE_KEY }}"
-            }
-          }
-          EOF
+      # - name: Generate backend.tf
+      #   run: |
+      #     cat <<EOF > backend.tf
+      #     terraform {
+      #       backend "azurerm" {
+      #         resource_group_name  = "tfstate-backend-rg"
+      #         storage_account_name = "${{ inputs.storage-account-name }}"
+      #         container_name       = "${{ inputs.container-name }}"
+      #         key                  = "${{ env.TFSTATE_KEY }}"
+      #       }
+      #     }
+      #     EOF
 
-      - name: Commit and Push backend.tf
-        run: |
-          git config --global user.name "gh-actions"
-          git config --global user.email "github-actions@users.noreply.github.com"
-          git add backend.tf
-          git commit -m "Add backend.tf for remote state [skip ci]" || echo "No changes to commit"
+      # - name: Commit and Push backend.tf
+      #   run: |
+      #     git config --global user.name "gh-actions"
+      #     git config --global user.email "github-actions@users.noreply.github.com"
+      #     git add backend.tf
+      #     git commit -m "Add backend.tf for remote state [skip ci]" || echo "No changes to commit"
 
-          if [[ "$GITHUB_REF" == refs/heads/* ]]; then
-            git push origin HEAD:$GITHUB_REF
-          else
-            echo "Skipping push — not on a branch."
-          fi
+      #     if [[ "$GITHUB_REF" == refs/heads/* ]]; then
+      #       git push origin HEAD:$GITHUB_REF
+      #     else
+      #       echo "Skipping push — not on a branch."
+      #     fi
 
-      - name: Set outputs
-        id: set_outputs
-        run: |
-          echo "storage_account_name=${{ inputs.storage-account-name }}" >> $GITHUB_OUTPUT
-          echo "tfstate_key=${{ env.TFSTATE_KEY }}" >> $GITHUB_OUTPUT
+      # - name: Set outputs
+      #   id: set_outputs
+      #   run: |
+      #     echo "storage_account_name=${{ inputs.storage-account-name }}" >> $GITHUB_OUTPUT
+      #     echo "tfstate_key=${{ env.TFSTATE_KEY }}" >> $GITHUB_OUTPUT
