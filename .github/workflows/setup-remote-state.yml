@@ -20,6 +20,13 @@ on:
       environment:
         required: true
         type: string
+    outputs:
+      storage_account_name:
+        description: "Storage account name"
+        value: ${{ inputs.storage-account-name }}
+      tfstate_key:
+        description: "Terraform state key"
+        value: ${{ inputs.environment }}.tfstate
     secrets:
       AZURE_CREDENTIALS:
         required: true
@@ -31,10 +38,6 @@ jobs:
   setup-remote-state:
     name: Configure Azure Storage Backend
     runs-on: ubuntu-latest
-
-    outputs:
-      storage_account_name: ${{ inputs.storage-account-name }}
-      tfstate_key: ${{ inputs.environment }}.tfstate
 
     steps:
       - name: Checkout repo
