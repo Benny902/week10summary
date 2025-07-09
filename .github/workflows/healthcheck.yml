@@ -1,6 +1,9 @@
 name: healthcheck
 
 on:
+  schedule:
+    - cron: '0 */12 * * *'  # Every 12 hours
+  workflow_dispatch:
   workflow_call:
     outputs:
       ip_status:
@@ -29,30 +32,25 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Set dynamic variables
-        run: |
-          echo "RESOURCE_GROUP=${{ inputs.environment }}-devops-week10-rg" >> $GITHUB_ENV
-          echo "VM_NAME=week10vm" >> $GITHUB_ENV
-
       - name: Get Public IP Name
         id: get_ip_name
         run: |
           IP_NAME=$(az network public-ip list \
-            --resource-group "$RESOURCE_GROUP" \
+            --resource-group dev-devops-week10-rg \
             --query "[0].name" -o tsv)
           echo "IP_NAME=$IP_NAME" >> $GITHUB_ENV
 
       - name: Make IP Static
         run: |
           az network public-ip update \
-            --resource-group "$RESOURCE_GROUP" \
+            --resource-group dev-devops-week10-rg \
             --name "$IP_NAME" \
             --allocation-method Static
 
       - name: Get VM Public IP
         id: get_vm_ip
         run: |
-          VM_IP=$(az vm show -d -g "$RESOURCE_GROUP" -n "$VM_NAME" --query publicIps -o tsv)
+          VM_IP=$(az vm show -d -g dev-devops-week10-rg -n week10vm --query publicIps -o tsv)
           echo "VM_IP=$VM_IP" >> $GITHUB_ENV
 
       - name: Run Initial Healthcheck
