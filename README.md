@@ -1849,6 +1849,9 @@ jobs:
 name: healthcheck
 
 on:
+  schedule:
+    - cron: '0 */12 * * *'  # Every 12 hours
+  workflow_dispatch:
   workflow_call:
     outputs:
       ip_status:
