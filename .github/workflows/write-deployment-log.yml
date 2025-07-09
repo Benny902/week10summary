@@ -24,17 +24,11 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Set dynamic variables
-        id: vars
-        run: |
-          echo "RESOURCE_GROUP=${{ inputs.environment }}-devops-week10-rg" >> $GITHUB_ENV
-          echo "VM_NAME=week10vm" >> $GITHUB_ENV
-
       - name: Get VM Info (IP, Region, Size, Image)
         id: vm_info
         run: |
-          VM_JSON=$(az vm show -g "$RESOURCE_GROUP" -n "$VM_NAME")
-          VM_IP=$(az vm show -d -g "$RESOURCE_GROUP" -n "$VM_NAME" --query publicIps -o tsv)
+          VM_JSON=$(az vm show -g dev-devops-week10-rg -n week10vm)
+          VM_IP=$(az vm show -d -g dev-devops-week10-rg -n week10vm --query publicIps -o tsv)
           echo "VM_IP=$VM_IP" >> $GITHUB_ENV
           echo "VM_LOCATION=$(echo $VM_JSON | jq -r '.location')" >> $GITHUB_ENV
           echo "VM_SIZE=$(echo $VM_JSON | jq -r '.hardwareProfile.vmSize')" >> $GITHUB_ENV
@@ -52,7 +46,6 @@ jobs:
 
           ## Deployment Entry - $TIMESTAMP
 
-          **Environment:** ${{ inputs.environment }}
           **Public IP:** $VM_IP  
           **Region:** $VM_LOCATION  
           **VM Size:** $VM_SIZE  
@@ -60,7 +53,7 @@ jobs:
 
           ### Infrastructure
           - Provisioned via **Terraform** (modular setup)
-            - Modules: \`resource_group\`, \`network\`, \`vm\`
+            - Modules: `resource_group`, `network`, `vm`
             - Cloud-init script used for bootstrapping
             - VM auto-runs Docker Compose on startup
 
@@ -78,15 +71,15 @@ jobs:
 
           ### Azure CLI Commands Used
           - az login --use-device-code
-          - az group create --name $RESOURCE_GROUP --location $VM_LOCATION
+          - az group create --name dev-devops-week10-rg --location $VM_LOCATION
           - az network public-ip update --allocation-method Static
           - az vm create ... --image $VM_IMAGE --size $VM_SIZE ...
-          - rsync ./ to VM
+          - scp ./ to VM
           - docker-compose up -d
           - az network nsg rule create ...
 
           ### Deployment Method
-          - GitHub Actions CI/CD (\`deploy-vm.yml\`)
+          - GitHub Actions CI/CD (`deploy-vm.yml`)
           - Auto-restart on reboot via cloud-init
 
           ### Healthcheck
