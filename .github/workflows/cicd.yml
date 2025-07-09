@@ -78,7 +78,9 @@ jobs:
 
   setup-remote-state:
     needs: [backend-test, frontend-test, set-environment, gate-approval]
-    if: ${{ needs.set-environment.outputs.selected_env == 'dev' || (needs.set-environment.outputs.selected_env == 'prod' && needs.gate-approval.result == 'success') }}
+    if: ${{ 
+      needs.set-environment.outputs.selected_env == 'dev' ||
+      (needs.set-environment.outputs.selected_env == 'prod' && success()) }}
     uses: ./.github/workflows/setup-remote-state.yml
     with:
       storage-account-name: tfstateweek10infra
@@ -88,8 +90,10 @@ jobs:
     secrets: inherit
 
   deploy-infrastructure:
-    needs: [setup-remote-state, set-environment]
-    if: ${{ needs.setup-remote-state.result == 'success' }}
+    needs: [setup-remote-state, set-environment, gate-approval]
+    if: ${{ 
+      needs.set-environment.outputs.selected_env == 'dev' ||
+      (needs.set-environment.outputs.selected_env == 'prod' && success()) }}
     uses: ./.github/workflows/terraform-deploy.yml
     with:
       storage-account-name: ${{ needs.setup-remote-state.outputs.storage_account_name }}
