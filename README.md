@@ -2084,7 +2084,7 @@ jobs:
 
 <br>
 
-Reboot check: https://github.com/Benny902/week9summary/actions/runs/16027810765  
+Reboot check:  
 ![alt text](images/reboot-vm.png)
 
 <br>
