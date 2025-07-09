@@ -2,6 +2,10 @@ name: Attach P1 Disk
 
 on:
   workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
 
 jobs:
   attach-p1-disk:
@@ -15,7 +19,8 @@ jobs:
 
       - name: Create and Attach P1 Premium SSD (idempotent)
         run: |
-          RESOURCE_GROUP="dev-devops-week10-rg"
+          ENVIRONMENT="${{ inputs.environment }}"
+          RESOURCE_GROUP="${ENVIRONMENT}-devops-week10-rg"
           VM_NAME="week10vm"
           LOCATION="westeurope"
           DISK_NAME="myP1Disk"

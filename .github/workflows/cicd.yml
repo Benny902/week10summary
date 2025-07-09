@@ -104,11 +104,15 @@ jobs:
   create-and-attach-disk:
     needs: deploy-infrastructure
     uses: ./.github/workflows/create-disk.yml
+    with:
+      environment: ${{ needs.set-environment.outputs.selected_env }}
     secrets: inherit
 
   get-vm-ip:
     needs: deploy-infrastructure
     uses: ./.github/workflows/get-ip.yml
+    with:
+      environment: ${{ needs.set-environment.outputs.selected_env }}
     secrets: inherit
 
   deploy-webapp:
@@ -121,6 +125,8 @@ jobs:
   healthcheck:
     needs: deploy-webapp
     uses: ./.github/workflows/healthcheck.yml
+    with:
+      environment: ${{ needs.set-environment.outputs.selected_env }}
     secrets: inherit
 
   e2e-tests:
@@ -130,4 +136,6 @@ jobs:
   write-deployment-log:
     needs: healthcheck
     uses: ./.github/workflows/write-deployment-log.yml
+    with:
+      environment: ${{ needs.set-environment.outputs.selected_env }}
     secrets: inherit

@@ -1749,7 +1749,7 @@ What each case means in the `Conditionally Import Resource Group if Not Already 
 
 ---
 
-## Automatic Deployment and Healthcheck Script
+## Automatic Deployment
 
 <details> <summary> deploy-webapp.yml </summary>
 
@@ -1808,6 +1808,8 @@ jobs:
 ```
 </details>
 
+## Healthcheck Script
+
 <details> <summary> healthcheck.yml </summary>
 
 ```yml
@@ -1819,6 +1821,13 @@ on:
       ip_status:
         description: "Was the IP made static successfully?"
         value: ${{ jobs.healthcheck.outputs.ip_status }}
+    inputs:
+      environment:
+        required: true
+        type: string
+    secrets:
+      AZURE_CREDENTIALS:
+        required: true
 
 jobs:
   healthcheck:
@@ -1835,25 +1844,30 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Set dynamic variables
+        run: |
+          echo "RESOURCE_GROUP=${{ inputs.environment }}-devops-week10-rg" >> $GITHUB_ENV
+          echo "VM_NAME=week10vm" >> $GITHUB_ENV
+
       - name: Get Public IP Name
         id: get_ip_name
         run: |
           IP_NAME=$(az network public-ip list \
-            --resource-group devops-week9-rg \
+            --resource-group "$RESOURCE_GROUP" \
             --query "[0].name" -o tsv)
           echo "IP_NAME=$IP_NAME" >> $GITHUB_ENV
 
       - name: Make IP Static
         run: |
           az network public-ip update \
-            --resource-group devops-week9-rg \
+            --resource-group "$RESOURCE_GROUP" \
             --name "$IP_NAME" \
             --allocation-method Static
 
       - name: Get VM Public IP
         id: get_vm_ip
         run: |
-          VM_IP=$(az vm show -d -g devops-week9-rg -n week9vm --query publicIps -o tsv)
+          VM_IP=$(az vm show -d -g "$RESOURCE_GROUP" -n "$VM_NAME" --query publicIps -o tsv)
           echo "VM_IP=$VM_IP" >> $GITHUB_ENV
 
       - name: Run Initial Healthcheck
@@ -1874,8 +1888,209 @@ jobs:
 all steps are logged and documented in this file: `deployment_log.md`  
 which is being updated automatically after every github Action.
 
+with this step in the main cicd.yml:
+```yml
+  write-deployment-log:
+    needs: healthcheck
+    uses: ./.github/workflows/write-deployment-log.yml
+    secrets: inherit
+```
+
+<details> <summary>`write-deployment-log.yml` </summary>
+
+```yml
+name: Write Deployment Log
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+        
+permissions:
+  contents: write # need this to be able to 'push' to the repo (to update the log file)
+
+jobs:
+  log:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set dynamic variables
+        id: vars
+        run: |
+          echo "RESOURCE_GROUP=${{ inputs.environment }}-devops-week10-rg" >> $GITHUB_ENV
+          echo "VM_NAME=week10vm" >> $GITHUB_ENV
+
+      - name: Get VM Info (IP, Region, Size, Image)
+        id: vm_info
+        run: |
+          VM_JSON=$(az vm show -g "$RESOURCE_GROUP" -n "$VM_NAME")
+          VM_IP=$(az vm show -d -g "$RESOURCE_GROUP" -n "$VM_NAME" --query publicIps -o tsv)
+          echo "VM_IP=$VM_IP" >> $GITHUB_ENV
+          echo "VM_LOCATION=$(echo $VM_JSON | jq -r '.location')" >> $GITHUB_ENV
+          echo "VM_SIZE=$(echo $VM_JSON | jq -r '.hardwareProfile.vmSize')" >> $GITHUB_ENV
+          echo "VM_IMAGE=$(echo $VM_JSON | jq -r '.storageProfile.imageReference.offer') $(echo $VM_JSON | jq -r '.storageProfile.imageReference.sku')" >> $GITHUB_ENV
+
+      - name: Create and Append deployment_log.md
+        run: |
+          TIMESTAMP=$(TZ="Etc/GMT-3" date +"%Y-%m-%d %H:%M:%S")
+
+          echo "Appending new deployment log entry..."
+
+          cat <<EOF >> deployment_log.md
+
+          ---
+
+          ## Deployment Entry - $TIMESTAMP
+
+          **Environment:** ${{ inputs.environment }}
+          **Public IP:** $VM_IP  
+          **Region:** $VM_LOCATION  
+          **VM Size:** $VM_SIZE  
+          **Image:** $VM_IMAGE
+
+          ### Infrastructure
+          - Provisioned via **Terraform** (modular setup)
+            - Modules: \`resource_group\`, \`network\`, \`vm\`
+            - Cloud-init script used for bootstrapping
+            - VM auto-runs Docker Compose on startup
+
+          ### Networking
+          - Static Public IP assigned
+          - NSG Rules configured:
+            - Port 22 (SSH)
+            - Port 3000 (Backend)
+            - Port 4000 (Frontend)
+
+          ### Application Deployment
+          - Microblog Backend: http://$VM_IP:3000
+          - Microblog Frontend: http://$VM_IP:4000
+          - Docker Compose used to deploy both services
+
+          ### Azure CLI Commands Used
+          - az login --use-device-code
+          - az group create --name $RESOURCE_GROUP --location $VM_LOCATION
+          - az network public-ip update --allocation-method Static
+          - az vm create ... --image $VM_IMAGE --size $VM_SIZE ...
+          - scp ./ to VM
+          - docker-compose up -d
+          - az network nsg rule create ...
+
+          ### Deployment Method
+          - GitHub Actions CI/CD (\`deploy-vm.yml\`)
+          - Auto-restart on reboot via cloud-init
+
+          ### Healthcheck
+          - curl http://$VM_IP:3000
+          - curl http://$VM_IP:4000
+
+          ### Reboot Test
+          - App recovered and served frontend/backend correctly
+
+          ### Browser Compatibility
+          - Chrome
+          - Firefox
+          - Mobile
+
+          EOF
+
+      - name: Commit and push updated deployment_log.md
+        run: |
+          git config --global user.name "gh-actions"
+          git config --global user.email "github-actions@users.noreply.github.com"
+          git add deployment_log.md
+          git commit -m "Update deployment_log.md [skip ci]" || echo "No changes to commit"
+
+          BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}")
+          if [[ "$GITHUB_REF" == refs/heads/* ]]; then
+            echo "Pushing to branch $BRANCH_NAME..."
+            git push origin HEAD:$GITHUB_REF
+          else
+            echo "Not a branch (probably a tag or detached head), skipping push."
+          fi
+```
+</details>
+
+### example of latest push deployment log :
+
+https://github.com/Benny902/week10summary/blob/main/deployment_log.md
+
+![alt text](images/deployment-log.png)
+
+
+
+---
 
 ## Resilience Test
 This workflow reboots the VM via SSH, waits, then checks if the app is reachable via curl
-reboot-check.yml, it is not run automaticaly in the cicd, it can be run individualy in the github actions.
+reboot-check.yml, it is not run automaticaly in the cicd, it can be run individualy in the github actions:
 
+<details> <summary> reboot-check.yml </summary>
+
+```yml
+name: Reboot and Healthcheck
+
+on:
+  workflow_dispatch:
+
+jobs:
+  get-vm-ip:
+    uses: ./.github/workflows/get-ip.yml
+    secrets: inherit
+
+  reboot-test:
+    needs: get-vm-ip
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Write SSH key
+        run: |
+          echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Reboot VM via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa azureuser@${{ needs.get-vm-ip.outputs.vm_ip }} "sudo reboot" || true
+          echo "Waiting 90s for reboot..."
+          sleep 90
+
+      - name: Health Check After Reboot
+        run: |
+          echo "Rechecking app at http://${{ needs.get-vm-ip.outputs.vm_ip }}:3000" > reboot-healthcheck.log
+          if curl --fail --silent http://${{ needs.get-vm-ip.outputs.vm_ip }}:3000; then
+            echo "App came back online" >> reboot-healthcheck.log
+          else
+            echo "App failed after reboot" >> reboot-healthcheck.log
+            exit 1
+          fi
+
+      - name: Upload Healthcheck Result
+        uses: actions/upload-artifact@v4
+        with:
+          name: reboot-healthcheck-log
+          path: reboot-healthcheck.log
+```
+</details>
+
+<br>
+
+Reboot check: https://github.com/Benny902/week9summary/actions/runs/16027810765  
+![alt text](images/reboot-vm.png)
+
+<br>
+
+Before and after VM reboot:
+
+![alt text](images/before-after.png)
+
+---
