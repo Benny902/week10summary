@@ -38,6 +38,8 @@ jobs:
 
       - name: Get Public IP Name
         id: get_ip_name
+        env:
+          RESOURCE_GROUP: ${{ env.RESOURCE_GROUP }}
         run: |
           echo "Getting IP from RG: $RESOURCE_GROUP"
           IP_NAME=$(az network public-ip list \
@@ -46,15 +48,21 @@ jobs:
           echo "ip_name=$IP_NAME" >> $GITHUB_OUTPUT
 
       - name: Make IP Static
+        env:
+          RESOURCE_GROUP: ${{ env.RESOURCE_GROUP }}
+          IP_NAME: ${{ steps.get_ip_name.outputs.ip_name }}
         run: |
-          echo "Making IP static: $RESOURCE_GROUP, ${{ steps.get_ip_name.outputs.ip_name }}"
+          echo "Making IP static: $RESOURCE_GROUP, $IP_NAME"
           az network public-ip update \
             --resource-group "$RESOURCE_GROUP" \
-            --name "${{ steps.get_ip_name.outputs.ip_name }}" \
+            --name "$IP_NAME" \
             --allocation-method Static
 
       - name: Get VM Public IP
         id: get_vm_ip
+        env:
+          RESOURCE_GROUP: ${{ env.RESOURCE_GROUP }}
+          VM_NAME: ${{ env.VM_NAME }}
         run: |
           VM_IP=$(az vm show -d \
             -g "$RESOURCE_GROUP" \
