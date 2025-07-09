@@ -28,8 +28,10 @@ jobs:
 
       - name: Set variables
         id: set_vars
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          RESOURCE_GROUP="${{ inputs.environment }}-devops-week10-rg"
+          RESOURCE_GROUP="${ENVIRONMENT}-devops-week10-rg"
           VM_NAME="week10vm"
           echo "RESOURCE_GROUP=$RESOURCE_GROUP" >> $GITHUB_ENV
           echo "VM_NAME=$VM_NAME" >> $GITHUB_ENV
