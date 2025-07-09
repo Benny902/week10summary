@@ -927,6 +927,39 @@ in the course:
 ## Flowchart
 ![alt text](drawio/week10sum.png)
 
+## Project folder structure 
+
+```css
+/
+├── backend/
+├── frontend/
+├── docker-compose.yml
+├── README.md
+├── deployment_log.md
+├── env/
+│   └── dev.env
+│   └── prod.env
+├── main.tf
+├── variables.tf
+├── outputs.tf
+├── backend.tf
+└── modules/
+    ├── resource_group/
+    │   └── main.tf
+    │   └── variables.tf
+    │   └── outputs.tf
+    ├── network/
+    │   └── main.tf
+    │   └── variables.tf
+    │   └── outputs.tf
+    └── vm/
+        └── main.tf
+        └── variables.tf
+        └── cloud-init.sh
+```
+
+---
+
 ### GitHubSecrets Required (Settings > Secrets and variables > Actions): 
 - VM_SSH_KEY → Contents of the private ~/.ssh/id_rsa file (not the .pub!)
 - AZURE_CREDENTIALS → A service principal in JSON format to allow azure/login
@@ -2096,33 +2129,3 @@ Before and after VM reboot:
 ---
 
 
-#### Project folder structure 
-
-```css
-/
-├── backend/
-├── frontend/
-├── docker-compose.yml
-├── README.md
-├── deployment_log.md
-├── env/
-│   └── dev.env
-│   └── prod.env
-├── main.tf
-├── variables.tf
-├── outputs.tf
-├── backend.tf
-└── modules/
-    ├── resource_group/
-    │   └── main.tf
-    │   └── variables.tf
-    │   └── outputs.tf
-    ├── network/
-    │   └── main.tf
-    │   └── variables.tf
-    │   └── outputs.tf
-    └── vm/
-        └── main.tf
-        └── variables.tf
-        └── cloud-init.sh
-```

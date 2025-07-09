@@ -28,24 +28,31 @@ jobs:
 
       - name: Get Public IP Name
         id: get_ip_name
+        env:
+          RESOURCE_GROUP: ${{ inputs.environment }}-devops-week10-rg
         run: |
           IP_NAME=$(az network public-ip list \
-            --resource-group "${{ inputs.environment }}-devops-week10-rg" \
+            --resource-group "$RESOURCE_GROUP" \
             --query "[0].name" -o tsv)
           echo "ip_name=$IP_NAME" >> $GITHUB_OUTPUT
 
       - name: Make IP Static
+        env:
+          RESOURCE_GROUP: ${{ inputs.environment }}-devops-week10-rg
+          IP_NAME: ${{ steps.get_ip_name.outputs.ip_name }}
         run: |
           az network public-ip update \
-            --resource-group "${{ inputs.environment }}-devops-week10-rg" \
-            --name "${{ steps.get_ip_name.outputs.ip_name }}" \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$IP_NAME" \
             --allocation-method Static
 
       - name: Get VM Public IP
         id: get_vm_ip
+        env:
+          RESOURCE_GROUP: ${{ inputs.environment }}-devops-week10-rg
         run: |
           VM_IP=$(az vm show -d \
-            -g "${{ inputs.environment }}-devops-week10-rg" \
+            -g "$RESOURCE_GROUP" \
             -n week10vm \
             --query publicIps -o tsv)
           echo "vm_ip=$VM_IP" >> $GITHUB_OUTPUT
