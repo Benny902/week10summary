@@ -1,6 +1,9 @@
 name: Get Azure VM Public IP
 
 on:
+  schedule:
+    - cron: '0 */12 * * *'  # Every 12 hours
+  workflow_dispatch:
   workflow_call:
     outputs:
       vm_ip:
@@ -26,47 +29,23 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Set variables
-        id: set_vars
-        env:
-          ENVIRONMENT: ${{ inputs.environment }}
-        run: |
-          RESOURCE_GROUP="${ENVIRONMENT}-devops-week10-rg"
-          VM_NAME="week10vm"
-          echo "RESOURCE_GROUP=$RESOURCE_GROUP" >> $GITHUB_ENV
-          echo "VM_NAME=$VM_NAME" >> $GITHUB_ENV
-
       - name: Get Public IP Name
         id: get_ip_name
-        env:
-          RESOURCE_GROUP: ${{ env.RESOURCE_GROUP }}
         run: |
-          echo "Getting IP from RG: $RESOURCE_GROUP"
           IP_NAME=$(az network public-ip list \
-            --resource-group "$RESOURCE_GROUP" \
+            --resource-group dev-devops-week10-rg \
             --query "[0].name" -o tsv)
           echo "ip_name=$IP_NAME" >> $GITHUB_OUTPUT
 
       - name: Make IP Static
-        env:
-          RESOURCE_GROUP: ${{ env.RESOURCE_GROUP }}
-          IP_NAME: ${{ steps.get_ip_name.outputs.ip_name }}
         run: |
-          echo "Making IP static: $RESOURCE_GROUP, $IP_NAME"
           az network public-ip update \
-            --resource-group "$RESOURCE_GROUP" \
-            --name "$IP_NAME" \
+            --resource-group dev-devops-week10-rg \
+            --name "${{ steps.get_ip_name.outputs.ip_name }}" \
             --allocation-method Static
 
       - name: Get VM Public IP
         id: get_vm_ip
-        env:
-          RESOURCE_GROUP: ${{ env.RESOURCE_GROUP }}
-          VM_NAME: ${{ env.VM_NAME }}
         run: |
-          VM_IP=$(az vm show -d \
-            -g "$RESOURCE_GROUP" \
-            -n "$VM_NAME" \
-            --query publicIps -o tsv)
-          echo "vm_ip=$VM_IP"
+          VM_IP=$(az vm show -d -g dev-devops-week10-rg -n week10vm --query publicIps -o tsv)
           echo "vm_ip=$VM_IP" >> $GITHUB_OUTPUT
