@@ -2094,3 +2094,35 @@ Before and after VM reboot:
 ![alt text](images/before-after.png)
 
 ---
+
+
+#### Project folder structure 
+
+```css
+/
+├── backend/
+├── frontend/
+├── docker-compose.yml
+├── README.md
+├── deployment_log.md
+├── env/
+│   └── dev.env
+│   └── prod.env
+├── main.tf
+├── variables.tf
+├── outputs.tf
+├── backend.tf
+└── modules/
+    ├── resource_group/
+    │   └── main.tf
+    │   └── variables.tf
+    │   └── outputs.tf
+    ├── network/
+    │   └── main.tf
+    │   └── variables.tf
+    │   └── outputs.tf
+    └── vm/
+        └── main.tf
+        └── variables.tf
+        └── cloud-init.sh
+```

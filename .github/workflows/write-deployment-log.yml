@@ -81,7 +81,7 @@ jobs:
           - az group create --name $RESOURCE_GROUP --location $VM_LOCATION
           - az network public-ip update --allocation-method Static
           - az vm create ... --image $VM_IMAGE --size $VM_SIZE ...
-          - scp ./ to VM
+          - rsync ./ to VM
           - docker-compose up -d
           - az network nsg rule create ...
 
